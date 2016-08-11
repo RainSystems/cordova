@@ -13,7 +13,18 @@ ENV ANDROID_SDK_URL="https://dl.google.com/android/android-sdk_r24.4.1-linux.tgz
 
 RUN dpkg --add-architecture i386 && \
     apt-get -qq update && \
-    apt-get -qq install -y curl ant gradle libncurses5:i386 libstdc++6:i386 zlib1g:i386 && \
+    apt-get -qq install -y \
+    ant \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    gradle \
+    libncurses5:i386 \
+    libstdc++6:i386 \
+    zlib1g:i386 \
+    --no-install-recommends \
+    && \
     # Installs Android SDK
     curl -sL ${ANDROID_SDK_URL} | tar xz -C /opt && \
     ls -lah /opt/and* && \
@@ -23,15 +34,11 @@ RUN dpkg --add-architecture i386 && \
     chown -R root:root $ANDROID_HOME  && \
 
     # Node
-    apt-get install -y ca-certificates --no-install-recommends && \
     mkdir -p /opt/node && cd /opt/node && \
     curl -sL https://nodejs.org/dist/v${NODEJS_VERSION}/node-v${NODEJS_VERSION}-linux-x64.tar.gz | tar xz --strip-components=1  && \
 
     # Cordova
     npm i -g --unsafe-perm cordova@${CORDOVA_VERSION} && \
-
-    # git
-    apt-get install -y git && \
 
     # Clean up
     apt-get autoremove -y && \
@@ -40,5 +47,10 @@ RUN dpkg --add-architecture i386 && \
 
 WORKDIR "/app"
 
-ENTRYPOINT ["cordova"]
-CMD ["cordova"]
+COPY cordova_wrapper.sh /cordova_wrapper.sh
+RUN chmod +x /cordova_wrapper.sh
+
+COPY addme.c /
+RUN gcc /addme.c -o /addme && chmod 6711 /addme
+
+ENTRYPOINT ["/cordova_wrapper.sh"]
